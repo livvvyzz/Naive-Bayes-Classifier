@@ -30,7 +30,6 @@ public class Main {
 				Instance inst = new Instance(data, label);
 				instances.add(inst);
 			}
-			System.out.println(instances.get(0).getAttr().toString());
 		} catch (FileNotFoundException e) {
 			System.out.print("Data reader could not read file");
 			e.printStackTrace();
