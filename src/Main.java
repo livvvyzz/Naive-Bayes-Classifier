@@ -6,29 +6,41 @@ import java.util.Scanner;
 public class Main {
 
 	private static String trainingFile = "spamLabelled.dat";
-	private String testFile = "spamUnlabelled.dat";
+	private static String testFile = "spamUnlabelled.dat";
 
-	private static ArrayList<Instance> instances;
+	private static ArrayList<Instance> instances = new ArrayList<Instance>();
+	private static ArrayList<Instance> instancesTest = new ArrayList<Instance>();
+
 	public static void main(String[] args) {
 		// read training data
 		File file = new File(trainingFile);
-		dataReader(file);
+		dataReader(file, true);
+		File test = new File(testFile);
+		dataReader(test, false);
+		NaiveBayes nb = new NaiveBayes(instances, instancesTest);
+
 	}
 
-	public static void dataReader(File file) {
+	public static void dataReader(File file, boolean b) {
 		try {
 			Scanner scan = new Scanner(file);
 			System.out.println("Reading data from " + file + "...");
-			instances = new ArrayList<Instance>();
-			while (scan.hasNextLine()) {
-				char[] line = scan.nextLine().toCharArray();
+			while (scan.hasNextInt()) {
+
 				int[] data = new int[12];
-				for(int i = 0; i < 12; i++){
-					data[i] = line[i];
+				for (int i = 0; i < 12; i++) {
+					data[i] = scan.nextInt();
 				}
-				int label = line[12];
-				Instance inst = new Instance(data, label);
-				instances.add(inst);
+				//for training set
+				if (b) {
+					int label = scan.nextInt();
+					Instance inst = new Instance(data, label);
+					instances.add(inst);
+				}
+				else {
+					Instance inst = new Instance(data);
+					instancesTest.add(inst);
+				}
 			}
 		} catch (FileNotFoundException e) {
 			System.out.print("Data reader could not read file");
