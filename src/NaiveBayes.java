@@ -5,29 +5,38 @@ public class NaiveBayes {
 	private ArrayList<Instance> trainingSet;
 	private ArrayList<Instance> testSet;
 
-	private double[] feature_probabilities;
 
+	//prior probabilities
 	private double probSpam;
 	private double probNotSpam;
+	//conditional probabilities
+	private double[] p_feat_spam;
+	private double[] p_feat_notSpam;
+	//feature probabilities
+	private double[] feature_probabilities;
+	//posterior probabilities
+	private double p_spam_data;
+	private double p_notSpam_data;
 
 	public NaiveBayes(ArrayList<Instance> training, ArrayList<Instance> test) {
 		trainingSet = training;
 		testSet = test;
-
+		
 		// calculate p(spam) and P(not spam)
 		calculatePriorProbs();
 		// caculate the probabilities of each attribute occuring
 		feature_probabilities = calculateFeatureProbs();
 		// set guesses
 		calculateConditionalProbability();
+		for(Instance email : testSet){
+			calculatePosterior(email);
+		}
 
-		test();
-		testSet();
 	}
 
 	public void calculatePriorProbs() {
-		int spamCount = 0;
-		int notSpamCount = 0;
+		double spamCount = 0;
+		double notSpamCount = 0;
 		for (Instance i : trainingSet) {
 			if (i.getLabel() == 1) {
 				spamCount++;
@@ -35,8 +44,8 @@ public class NaiveBayes {
 				notSpamCount++;
 			}
 		}
-
 		this.probSpam = spamCount / trainingSet.size();
+
 		this.probNotSpam = notSpamCount / trainingSet.size();
 	}
 
@@ -65,40 +74,82 @@ public class NaiveBayes {
 	}
 
 	public void calculateConditionalProbability() {
-		
-	}
+		double numSpam = 0;
+		double numNotSpam = 0;
+		double[] numFeatureSpam = new double[trainingSet.size()];
+		double[] numFeatureNotSpam = new double[trainingSet.size()];
 
-	public double getProb(int index, int num, int spam) {
-		double count = 0;
-		for (int i = 0; i < trainingSet.size(); i++) {
-			if (trainingSet.get(i).getAttr()[index] == num && trainingSet.get(i).getLabel() == spam) {
-				count++;
-			}
-		}
-		return count / trainingSet.size();
-	}
-
-	public void test() {
-		double count = 0;
 		for (Instance email : trainingSet) {
-			if (email.getLabel() == email.getGuess()) {
-				count++;
-				System.out.println(email.getLabel() + "  " + email.getGuess());
+			if (email.getLabel() == 1) {
+				for (int i = 0; i < email.getAttr().length; i++) {
+					if (email.getAttr()[i] == 1) {
+						numFeatureSpam[i]++;
+					}
+				}
+				numSpam++;
+			} else {
+				for (int i = 0; i < email.getAttr().length; i++) {
+					if (email.getAttr()[i] == 1) {
+						numFeatureNotSpam[i]++;
+					}
+				}
+				numNotSpam++;
 			}
 		}
-		double prob = count / trainingSet.size();
-		System.out.print(prob);
+		
+		for(double d: numFeatureSpam){
+			d = d/numSpam;
+		}
+		for(double d : numFeatureNotSpam){
+			d = d/numNotSpam;
+		}
+		
+		p_feat_spam = numFeatureSpam;
+		p_feat_notSpam = numFeatureNotSpam;
 	}
 
-	public void testSet() {
-		for (Instance email : testSet) {
-			conditionalProbability(email);
-			if (email.getGuess() == 1) {
-				System.out.println("spam");
-			} else if (email.getGuess() == 0) {
-				System.out.println("nt spam");
+	public void calculatePosterior(Instance email){
+		double normaliser = 1;
+		this.p_spam_data = 1;
+		this.p_notSpam_data = 1;
+		
+		for(int i = 0; i < email.getAttr().length; i++){
+			if(email.getAttr()[i] == 1){
+				p_spam_data *= p_feat_spam[i];
+				p_notSpam_data *= p_feat_notSpam[i];
+				normaliser *= feature_probabilities[i];
 			}
 		}
+
+		p_spam_data =  p_spam_data * probSpam;
+		p_notSpam_data *= probNotSpam;
+		
+		p_spam_data /= normaliser;
+		p_notSpam_data /= normaliser;
+		
+		printPosteriors();
+	}
+
+	public void printPosteriors() {
+		System.out.println("Posteriors:");
+		System.out.println("p(Spam|Data) = "  + this.p_spam_data);
+		System.out.println("p(Not Spam|Data) = "  + this.p_notSpam_data);
+		System.out.println("Sum of posteriors = "  + (this.p_spam_data + this.p_notSpam_data));
+		if (this.p_spam_data > this.p_notSpam_data) {
+			System.out.println("Spam is more likely.");
+		} else if (this.p_spam_data < this.p_notSpam_data) {
+			System.out.println("Not Spam is more likely.");
+		} else {
+			System.out.println("Equal chance of breakdown vs no breakdown.");
+		}
+		System.out.println(" ");
+	}
+	
+	public void printProbabilities(){
+		System.out.println("Priors:");
+		System.out.println("p(Spam) = "  + this.probSpam);
+		System.out.println("p(Not Spam) = "  + this.probNotSpam);
+		
 	}
 
 }
